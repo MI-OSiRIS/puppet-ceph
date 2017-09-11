@@ -172,7 +172,7 @@ define ceph::rgw::instance (
     "${cluster}/client.${client_id}/rgw_num_rados_handles":       value => $num_rados_handles, ensure => $ensure;
     "${cluster}/client.${client_id}/rgw_thread_pool_size":        value => $thread_pool_size, ensure => $ensure;
     "${cluster}/client.${client_id}/rgw_override_bucket_index_max_shards": value => $bucket_index_max_shards, ensure => $bucket_index_max_shards_ensure;
-    "${cluster}/client.${client_id}rgw_dynamic_resharding":       value => $rgw_dynamic_resharding, ensure => $ensure;
+    "${cluster}/client.${client_id}/rgw_dynamic_resharding":       value => $rgw_dynamic_resharding, ensure => $ensure;
   }
 
   if ($frontend_type == 'civetweb')
