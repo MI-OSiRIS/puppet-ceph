@@ -104,8 +104,8 @@ define ceph::rgw::instance (
   $num_rados_handles  = undef,
   $thread_pool_size   = undef,
   $civetweb_num_threads = undef,
-  $bucket_index_max_shards = undef,
-  $rgw_dynamic_resharding = true
+  $rgw_dynamic_resharding = true,
+  $config              = undef
 ) {
 
   unless $rgw_data {
@@ -124,6 +124,21 @@ define ceph::rgw::instance (
     $keyring_path_r = "${rgw_data_r}/keyring"
   } else{
     $keyring_path_r = $keyring_path
+  }
+
+  # allow for any config param to be set
+  if $config {
+    validate_hash($config)
+    $config.each | $key, $value | {
+      if $value == 'absent' {
+        $config_ensure = 'absent'
+      } else {
+        $config_ensure = 'present'
+      }
+      ceph_config {
+        "${cluster}/client.${client_id}/$key": value => $value, ensure => $config_ensure
+      }
+    }
   }
 
   # this setting can over-ride zone settings so don't set explicitely if not given the param
