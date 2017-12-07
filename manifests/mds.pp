@@ -40,6 +40,7 @@ define ceph::mds (
   $ensure       = 'present',
   $mds_data     = undef,
   $keyring      = undef,
+  $config       = undef,
   $cluster      = 'ceph',
   $mds_standby_replay = true,
   $instance     = "${name}"
@@ -51,6 +52,20 @@ define ceph::mds (
     group => 'ceph',
     mode => '755',
     tag => 'ceph'
+  }
+
+  if $config {
+    validate_hash($config)
+    $config.each | $key, $value | {
+      if $value == 'absent' {
+        $config_ensure = 'absent'
+      } else {
+        $config_ensure = 'present'
+      }
+      ceph_config {
+        "${cluster}/mds/$key": value => $value, ensure => $config_ensure
+      }
+    }
   }
 
   if $ensure == 'present' {
