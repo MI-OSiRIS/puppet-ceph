@@ -50,6 +50,10 @@
 # taking integer part of (total volume group extents / db_per_device).  
 # Specifying both db_size and db_per_device will cause compilation failure. 
 #
+# [*osd_per_device*] Divide the given data device (resource name) into this many LV/OSD.  Typically used for NVMe devices 
+# which can serve more than one OSD to leverage device capabilities.  Defaults to 1.   
+# NOTE:  Module does not support specifying separate DB devices if using more than one OSD per device
+#
 # [*create_lv*]  If true this module will create logical volumes for data, db, and wal devs 
 #    If false then the module title and db param are assumed to be existing LV (or partition for block/wal is acceptable)
 #    LV are named as follows, example of name = /dev/mapper/mpatha, db = /dev/nvme0n1
@@ -70,6 +74,7 @@ define ceph::osd (
   Optional[Integer] $db_per_device = undef,
   Optional[String] $wal = undef,
   Optional[String] $wal_size = '100%',
+  Optional[Integer] $osd_per_device = 1,
   Boolean $create_lv = true,
   String $cluster = 'ceph',
   Integer $exec_timeout = $::ceph::params::exec_timeout,
@@ -86,6 +91,10 @@ define ceph::osd (
       fail('WAL specification is not yet implemented')
     }
 
+    if ($db and $osd_per_device > 1) {
+      fail('Specifying multiple OSD per device and separate DB devices not supported')
+    }
+
     unless $cluster == 'ceph' {
       $cluster_option = "--cluster ${cluster}"
       $cluster_name = $cluster
@@ -98,7 +107,7 @@ define ceph::osd (
         ensure => $ensure
       }
 
-      File_line["sysconfig-${cluster}-${name}"] -> Exec["create-osd-${data_basename}"]
+      File_line["sysconfig-${cluster}-${name}"] -> Exec <| tag == 'create-osd' |>
 
     } else {
       $cluster_name = $cluster
@@ -115,17 +124,24 @@ define ceph::osd (
     if $db_size {
       if '%' in $db_size {
         $db_size_decimal = chop($db_size) / 100
-        $lv_extents = "\$(bc <<< \"\$VGE * $db_size_decimal / 1\")"
-        $lv_size_flag = "-l\${LVE}"
+        $db_lv_extents = "\$(bc <<< \"\$VGE * $db_size_decimal / 1\")"
+        $db_lv_size_flag = "-l\${LVE}"
       } else {
-        $lv_size_flag = "-L${db_size}"
+        $db_lv_size_flag = "-L${db_size}"
       }
     } elsif $db_per_device {
-      $lv_extents =  "\$((\$VGE / $db_per_device))"
-      $lv_size_flag = "-l\${LVE}"
+      $db_lv_extents =  "\$((\$VGE / $db_per_device))"
+      $db_lv_size_flag = "-l\${LVE}"
     } else {
-      $lv_size_flag = "-l100%VG"
-      $lv_extents = 'undef'
+      $db_lv_size_flag = "-l100%VG"
+      $db_lv_extents = 'undef'
+    }
+
+    if $osd_per_device {
+      $osd_lv_extents = "\$((\$VGE / $osd_per_device))"
+      $osd_lv_size_flag = "-l\${LVE}"
+    } else {
+      $osd_lv_size_flag = "-l100%VG"
     }
 
     Exec { 
@@ -134,16 +150,18 @@ define ceph::osd (
 
     if $ensure == present {
 
-      Ceph_config<||> -> Exec["create-osd-${data_basename}"]
-      Ceph::Mon<||> -> Exec["create-osd-${data_basename}"]
-      Ceph::Key<||> -> Exec["create-osd-${data_basename}"]
+      Ceph_config<||> -> Exec <| tag == 'create-osd' |>
+      Ceph::Mon<||> -> Exec <| tag == 'create-osd' |>
+      Ceph::Key<||> -> Exec <| tag == 'create-osd' |>
+
+      $vgs_flags = "-o +vg_free_count,vg_extent_count -o-pv_count,lv_count,vg_name,vg_attr,snap_count,vg_size,vg_free,vg_free_count --noheadings --quiet"
 
       if $db {
         $db_basename = basename($db)
 
         if $create_lv {
-
-          $vg_extents = "\$(vgs vgdb_${db_basename} -o +vg_free_count,vg_extent_count -o-pv_count,lv_count,vg_name,vg_attr,snap_count,vg_size,vg_free,vg_free_count --noheadings --quiet)"
+          
+          $db_vg_extents = "\$(vgs vgdb_${db_basename} ${vgs_flags})"
 
           exec { "create-db-vg-${data_basename}":
             command => "vgcreate vgdb_${db_basename} ${db}",
@@ -154,7 +172,7 @@ define ceph::osd (
           exec { "create-db-lv-${data_basename}":
             # have to use shell provider to use features 
             provider => shell,
-            command => "VGE=$vg_extents; LVE=$lv_extents; lvcreate ${lv_size_flag} -n db_${data_basename} vgdb_${db_basename}",
+            command => "VGE=$db_vg_extents; LVE=$db_lv_extents; lvcreate ${db_lv_size_flag} -n db_${data_basename} vgdb_${db_basename}",
             unless => "lvs | grep -q db_${data_basename}[[:space:]]"
           }
 
@@ -171,30 +189,55 @@ define ceph::osd (
         $block_db_cl = ''
       }
 
+      # create an array to iterate through
+      $osd_array = range("1", $osd_per_device)
+
+      # now create data lv if specified
       if $create_lv {
+
+        # setup shell command string (output is only used if $osd_per_device > 1)
+        $osd_vg_extents = "\$(vgs vgdata_${data_basename} ${vgs_flags})"
+
         exec { "create-data-vg-${data_basename}":
           command => "vgcreate vgdata_${data_basename} ${data}",
           unless => "vgs | grep -q vgdata_${data_basename}[[:space:]]",
           onlyif => 'test -b ${data}'
-        } ->
-
-        exec { "create-data-lv-${data_basename}":
-          command => "lvcreate -l100%VG -n data_${data_basename} vgdata_${data_basename}",
-          unless => "lvs | grep -q data_${data_basename}[[:space:]]"
         } 
 
-        Exec["create-data-lv-${data_basename}"] -> Exec["create-osd-${data_basename}"]
+        $osd_array.each | $osd_index | {
+          if ($osd_per_device == 1) { $suffix = "" }
+          else { $suffix ="_${osd_index}" }
+          exec { "create-data-lv-${data_basename}${suffix}":
+            command => "VGE=$osd_vg_extents; LVE=$osd_lv_extents; lvcreate ${osd_lv_size_flag} -n data_${data_basename}${suffix} vgdata_${data_basename}",
+            unless => "lvs | grep -q data_${data_basename}${suffix}[[:space:]]",
+            provider => shell,
+            tag => "create-data-lv"
+          } 
+        }
 
-        $data_lv = "vgdata_${data_basename}/data_${data_basename}"
-
-      } else {
-        $data_lv = $data
-      }
+        Exec["create-data-vg-${data_basename}"] -> 
+        Exec <| tag == 'create-data-lv' |> ->
+        Exec <| tag == 'create-osd' |>
+        
+      } 
       
-      exec { "create-osd-${data_basename}":
-        command => "ceph-volume lvm create --bluestore --data ${data_lv} ${block_db_cl}",
-        unless => "ls -l /var/lib/ceph/osd/${cluster_name}-* | grep -q ${data_lv}"
-      }
+      $osd_array.each | $osd_index | {
+          if ($osd_per_device == 1) { $suffix = "" }
+          else { $suffix ="_${osd_index}" }
+
+          # created lv or passed in a device / lv to use?
+          if $create_lv {
+            $datastring = "vgdata_${data_basename}/data_${data_basename}${suffix}"
+          } else {
+            $datastring = "${data}"
+          }
+
+          exec { "create-osd-${data_basename}${suffix}":
+            command => "ceph-volume $cluster_option lvm create  --bluestore --data ${datastring} ${block_db_cl}",
+            unless => "ls -l /var/lib/ceph/osd/${cluster_name}-* | grep -q ${data_lv}",
+            tag => 'create-osd'
+        }
+    }
 
     } else {
       fail('Only ensure => present is supported, must remove OSD manually.  See comments in manifest for code that could be implemented again.')
