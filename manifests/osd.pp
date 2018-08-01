@@ -234,7 +234,7 @@ define ceph::osd (
 
           exec { "create-osd-${data_basename}${suffix}":
             command => "ceph-volume $cluster_option lvm create  --bluestore --data ${datastring} ${block_db_cl}",
-            unless => "ls -l /var/lib/ceph/osd/${cluster_name}-* | grep -q ${data_lv}",
+            unless => "ls -l /var/lib/ceph/osd/${cluster_name}-* | grep -q ${datastring}",
             tag => 'create-osd'
         }
     }
