@@ -26,6 +26,7 @@ define ceph::cluster (
   $authentication_type        = 'cephx',
   $keyring                    = undef,
   $debug_level                = 0,
+  $osd_pool_default_pg_autoscale_mode = 'on',
   $osd_pool_default_pg_num    = undef,
   $osd_pool_default_pgp_num   = undef,
   $osd_pool_default_size      = undef,
@@ -56,6 +57,7 @@ define ceph::cluster (
       "$cluster/global/err_to_stderr":               value => false;   # if this is not set you end up with errors in syslog
       "$cluster/global/osd_pool_default_pg_num":     value => $osd_pool_default_pg_num;
       "$cluster/global/osd_pool_default_pgp_num":    value => $osd_pool_default_pgp_num;
+      "$cluster/global/osd_pool_default_pg_autoscale_mode":    value => $osd_pool_default_pg_autoscale_mode;
       "$cluster/global/osd_pool_default_size":       value => $osd_pool_default_size;
       "$cluster/global/osd_pool_default_min_size":   value => $osd_pool_default_min_size;
       "$cluster/global/osd_pool_default_crush_rule": value => $osd_pool_default_crush_rule;
