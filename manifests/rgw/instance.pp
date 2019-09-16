@@ -74,8 +74,6 @@
 # [*cpu_quota*] Set the CPUQuota value in systemd unit.  If left undefined no setting is made.  Value is a percentage of time
 # allowed on a single CPU.  Use a value > 100% to allow time on more than one CPU.  Do not include % character in setting.
 #
-# [*num_rados_handles*]
-#
 # [*thread_pool_size*]
 #
 # [*civetweb_num_threads*]
@@ -112,7 +110,6 @@ define ceph::rgw::instance (
   $port               = '80',
   $cpu_shares         = undef,
   $cpu_quota          = undef,
-  $num_rados_handles  = undef,
   $thread_pool_size   = undef,
   $civetweb_num_threads = undef,
   $rgw_dynamic_resharding = true,
@@ -174,7 +171,6 @@ define ceph::rgw::instance (
     "${cluster}/client.${client_id}/log_file":                    value => $log_file_r, ensure => $ensure;
     "${cluster}/client.${client_id}/rgw_data":                    value => $rgw_data_r, ensure => $ensure;
     "${cluster}/client.${client_id}/user":                        value => $user, ensure => $ensure;
-    "${cluster}/client.${client_id}/rgw_num_rados_handles":       value => $num_rados_handles, ensure => $ensure;
     "${cluster}/client.${client_id}/rgw_thread_pool_size":        value => $thread_pool_size, ensure => $ensure;
     "${cluster}/client.${client_id}/rgw_dynamic_resharding":      value => $rgw_dynamic_resharding, ensure => $ensure;
     "${cluster}/client.${client_id}/rgw_swift_url":               value => $rgw_swift_url, ensure => $ensure;
