@@ -155,11 +155,12 @@ class ceph (
         Exec['installing_centos-release-ceph'] -> Package<| tag == 'ceph' |>
       } else {
         # If you want to deploy Ceph using packages provided by ceph.com repositories.
-        if ((($::operatingsystem == 'RedHat' or $::operatingsystem == 'CentOS') and (versioncmp($::operatingsystemmajrelease, '7') < 0)) or ($::operatingsystem == 'Fedora' and (versioncmp($::operatingsystemmajrelease, '19') < 0))) {
-          $el = '6'
-        } else {
+        if versioncmp($facts['os']['release']['major'],'7') == 0 {
           $el = '7'
+        } elsif versioncmp($facts['os']['release']['major'],'8') == 0 {
+          $el = '8'
         }
+        
 
         # Firefly is the last ceph.com supported release which conflicts with
         # the CentOS 7 base channel. Therefore make sure to only exclude the
@@ -221,9 +222,11 @@ class ceph (
           }
         }
 
-        # prefer ceph.com repos over EPEL
-        package { 'yum-plugin-priorities':
-          ensure => present,
+        if versioncmp($facts['os']['release']['major'],'7') == 0 {
+          # prefer ceph.com repos over EPEL
+          package { 'yum-plugin-priorities':
+            ensure => present,
+          }
         }
       }
 
