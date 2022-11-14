@@ -132,13 +132,17 @@ define ceph::key (
 
   if $ensure == 'present' {
 
-    exec { "ceph-key-${cluster_name}.${keyid}":
       command   => "/bin/true # comment to satisfy puppet syntax requirements
 set -ex
-ceph-authtool ${keyring_file} --name '${keyid}' --add-key '${secret}' ${caps}",
-      unless    => "/bin/true # comment to satisfy puppet syntax requirements
-set -ex
 sed -n 'N;\\%.*${keyid}.*\\n\\s*key = ${secret}%p' ${keyring_file} | grep ${keyid}",
+
+#      command   => "/bin/true # comment to satisfy puppet syntax requirements
+#set -ex
+#ceph-authtool ${keyring_file} --name '${keyid}' --add-key '${secret}' ${caps}",
+#      unless    => "/bin/true # comment to satisfy puppet syntax requirements
+#set -ex
+#sed -n 'N;\\%.*${keyid}.*\\n\\s*key = ${secret}%p' ${keyring_file} | grep ${keyid}",
+
       require   => [ Package['ceph'], File[$keyring_file], ],
       logoutput => true,
     }
