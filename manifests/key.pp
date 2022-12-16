@@ -127,6 +127,10 @@ define ceph::key (
       group   => $group,
       mode    => $mode,
       require => Package['ceph'],
+      content => "[${keyid}]
+        key = $secret
+",
+      replace => false,
     }
   }
 
