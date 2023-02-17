@@ -60,7 +60,7 @@
 
 class ceph (
   $ensure         = present,
-  $release        = 'jewel',
+  #$release        = 'jewel',
   $fastcgi        = false,
   $proxy          = undef,
   $proxy_username = undef,
@@ -70,6 +70,14 @@ class ceph (
 ) {
 
   include ::ceph::params
+  
+  # el7 repo does not contain ceph beyond octopus
+  # el8 repo includes quincy
+  if versioncmp($facts['os']['release']['major'],'7') <= 0 {
+        $release = 'octopus'
+  } else {
+        $release = 'quincy'
+  }
 
   # for use in version comparisons with < >
   $releasechar = join("${release}".match(/[a-z]/), "")
