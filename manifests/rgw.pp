@@ -23,47 +23,47 @@
 #   Optional. Default is osfamily dependent (check ceph::params).
 
 class ceph::rgw (
-  $pkg_radosgw        = $::ceph::params::pkg_radosgw
+###   $pkg_radosgw        = $::ceph::params::pkg_radosgw
 ) 
 {
-  package { $pkg_radosgw:
-    ensure => installed,
-    tag    => 'ceph',
-  }
-
-  # needed by rgw civetweb for libssl.sl and libcrypt.so
-  # this may or may not be the package on other dists?
-  package { 'openssl-devel': ensure => present }
-
-  $unit_path = "/usr/lib/systemd/system/ceph-radosgw@.service"
-  $unit_config_path = "/etc/systemd/system"
-  $target_path = "${unit_config_path}/ceph-radosgw.target.wants"
-
-  # Data directory for radosgw
-  file { '/var/lib/ceph/radosgw': # missing in redhat pkg
-    ensure => directory,
-    mode   => '0755',
-  }
-
-  file { "radosgw-target-dir":
-    ensure => directory,
-    path => $target_path
-  }
-
-  file { "radosgw-target":
-    ensure => 'link',
-  }
-
-  # used by rgw::instance when we put per-instance systemd unit over-rides in place
-  exec {'ceph-rgw-reload-systemd':
-    command => '/bin/systemctl daemon-reload',
-    refreshonly => true
-  }
-
-  Ceph_config<||> ~> Service<| tag == 'rgw' |>
-  Ceph::Key <||> -> Service<| tag == 'rgw' |>
-  # in case rgw pools are being defined with ceph::pool resources
-  Ceph::Pool <||> -> Service<| tag == 'rgw' |>
-  Exec['ceph-rgw-reload-systemd'] -> Service<| tag == 'rgw' |>
-
+###   package { $pkg_radosgw:
+###     ensure => installed,
+###     tag    => 'ceph',
+###   }
+### 
+###   # needed by rgw civetweb for libssl.sl and libcrypt.so
+###   # this may or may not be the package on other dists?
+###   package { 'openssl-devel': ensure => present }
+### 
+###   $unit_path = "/usr/lib/systemd/system/ceph-radosgw@.service"
+###   $unit_config_path = "/etc/systemd/system"
+###   $target_path = "${unit_config_path}/ceph-radosgw.target.wants"
+### 
+###   # Data directory for radosgw
+###   file { '/var/lib/ceph/radosgw': # missing in redhat pkg
+###     ensure => directory,
+###     mode   => '0755',
+###   }
+### 
+###   file { "radosgw-target-dir":
+###     ensure => directory,
+###     path => $target_path
+###   }
+### 
+###   file { "radosgw-target":
+###     ensure => 'link',
+###   }
+### 
+###   # used by rgw::instance when we put per-instance systemd unit over-rides in place
+###   exec {'ceph-rgw-reload-systemd':
+###     command => '/bin/systemctl daemon-reload',
+###     refreshonly => true
+###   }
+### 
+###   Ceph_config<||> ~> Service<| tag == 'rgw' |>
+###   Ceph::Key <||> -> Service<| tag == 'rgw' |>
+###   # in case rgw pools are being defined with ceph::pool resources
+###   Ceph::Pool <||> -> Service<| tag == 'rgw' |>
+###   Exec['ceph-rgw-reload-systemd'] -> Service<| tag == 'rgw' |>
+### 
 }
