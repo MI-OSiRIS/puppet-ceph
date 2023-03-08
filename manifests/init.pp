@@ -162,33 +162,13 @@ class ceph (
         # Make sure we install the repo before any Package resource
         Exec['installing_centos-release-ceph'] -> Package<| tag == 'ceph' |>
       } else {
-        # If you want to deploy Ceph using packages provided by ceph.com repositories.
-        if versioncmp($facts['os']['release']['major'],'7') == 0 {
-          $el = '7'
-        } elsif versioncmp($facts['os']['release']['major'],'8') == 0 {
-          $el = '8'
-        }
+        $el = $facts['os']['release']['major']
         
-
-        # Firefly is the last ceph.com supported release which conflicts with
-        # the CentOS 7 base channel. Therefore make sure to only exclude the
-        # conflicting packages in the exact combination of CentOS7 and Firefly.
-        # TODO: Remove this once Firefly becomes EOL
-        if ($::operatingsystem == 'CentOS' and $el == '7' and $release == 'firefly') {
-          file_line { 'exclude base':
-            ensure => $ensure,
-            path   => '/etc/yum.repos.d/CentOS-Base.repo',
-            after  => '^\[base\]$',
-            line   => 'exclude=python-ceph-compat python-rbd python-rados python-cephfs',
-          } -> Package<| tag == 'ceph' |>
-        }
-
         Yumrepo {
           proxy          => $proxy,
           proxy_username => $proxy_username,
           proxy_password => $proxy_password,
         }
-
 
         yumrepo { 'ext-ceph':
           # puppet versions prior to 3.5 do not support ensure, use enabled instead
