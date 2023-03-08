@@ -170,30 +170,34 @@ class ceph (
           proxy_password => $proxy_password,
         }
 
-        yumrepo { 'ext-ceph':
-          # puppet versions prior to 3.5 do not support ensure, use enabled instead
-          enabled    => $enabled,
-          descr      => "External Ceph ${release}",
-          name       => "ext-ceph-${release}",
-          baseurl    => "http://download.ceph.com/rpm-${release}/el${el}/\$basearch",
-          gpgcheck   => '1',
-          gpgkey     => 'https://download.ceph.com/keys/release.asc',
-          mirrorlist => absent,
-          priority   => '10', # prefer ceph repos over EPEL
-          tag        => 'ceph',
-        }
+        if versioncmp($facts['os']['release']['major'],'8') <= 0 {
+          yumrepo { 'ext-ceph':
+            # puppet versions prior to 3.5 do not support ensure, use enabled instead
+            enabled    => $enabled,
+            descr      => "External Ceph ${release}",
+            name       => "ext-ceph-${release}",
+            baseurl    => "http://download.ceph.com/rpm-${release}/el${el}/\$basearch",
+            gpgcheck   => '1',
+            gpgkey     => 'https://download.ceph.com/keys/release.asc',
+            mirrorlist => absent,
+            priority   => '10', # prefer ceph repos over EPEL
+            tag        => 'ceph',
+          }
 
-        yumrepo { 'ext-ceph-noarch':
-          # puppet versions prior to 3.5 do not support ensure, use enabled instead
-          enabled    => $enabled,
-          descr      => 'External Ceph noarch',
-          name       => "ext-ceph-${release}-noarch",
-          baseurl    => "http://download.ceph.com/rpm-${release}/el${el}/noarch",
-          gpgcheck   => '1',
-          gpgkey     => 'https://download.ceph.com/keys/release.asc',
-          mirrorlist => absent,
-          priority   => '10', # prefer ceph repos over EPEL
-          tag        => 'ceph',
+          yumrepo { 'ext-ceph-noarch':
+            # puppet versions prior to 3.5 do not support ensure, use enabled instead
+            enabled    => $enabled,
+            descr      => 'External Ceph noarch',
+            name       => "ext-ceph-${release}-noarch",
+            baseurl    => "http://download.ceph.com/rpm-${release}/el${el}/noarch",
+            gpgcheck   => '1',
+            gpgkey     => 'https://download.ceph.com/keys/release.asc',
+            mirrorlist => absent,
+            priority   => '10', # prefer ceph repos over EPEL
+            tag        => 'ceph',
+          } elsif versioncmp($facts['os']['release']['major'],'9') >= 0 {
+            package { 'centos-release-ceph-quincy': ensure => present }
+          }
         }
 
         if $fastcgi {
