@@ -195,9 +195,9 @@ class ceph (
             mirrorlist => absent,
             priority   => '10', # prefer ceph repos over EPEL
             tag        => 'ceph',
-          } elsif versioncmp($facts['os']['release']['major'],'9') >= 0 {
-            package { 'centos-release-ceph-quincy': ensure => present }
           }
+        } elsif versioncmp($facts['os']['release']['major'],'9') >= 0 {
+          package { 'centos-release-ceph-quincy': ensure => present }
         }
 
         if $fastcgi {
