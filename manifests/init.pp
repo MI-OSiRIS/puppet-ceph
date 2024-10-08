@@ -76,7 +76,7 @@ class ceph (
   if versioncmp($facts['os']['release']['major'],'7') <= 0 {
         $release = 'octopus'
   } else {
-        $release = 'quincy'
+        $release = 'reef'
   }
 
   # for use in version comparisons with < >
