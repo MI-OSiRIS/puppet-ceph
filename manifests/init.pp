@@ -72,7 +72,6 @@ class ceph (
   include ::ceph::params
   
   # el7 repo does not contain ceph beyond octopus
-  # el8 repo includes quincy
   if versioncmp($facts['os']['release']['major'],'7') <= 0 {
         $release = 'octopus'
   } else {
@@ -197,7 +196,7 @@ class ceph (
             tag        => 'ceph',
           }
         } elsif versioncmp($facts['os']['release']['major'],'9') >= 0 {
-          package { 'centos-release-ceph-quincy': ensure => present }
+          package { 'centos-release-ceph-reef': ensure => present }
         }
 
         if $fastcgi {
