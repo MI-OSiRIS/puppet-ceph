@@ -142,7 +142,7 @@ define ceph::mon (
           path => '/etc/sysconfig/ceph',
           line  => "CLUSTER=${cluster_name}",
           match => '^CLUSTER=[a-z0-9]+',
-          require => Package['ceph'],
+          require => Package['ceph-common'],
           notify => Service["$mon_service"]
         }
       }
