@@ -122,7 +122,7 @@ define ceph::key (
       owner   => $user,
       group   => $group,
       mode    => $mode,
-      require => Package['ceph'],
+      require => Package['ceph-common'],
       content => "[${keyid}]
       key = $secret
 ",
