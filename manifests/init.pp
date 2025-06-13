@@ -81,27 +81,27 @@ class ceph (
   # for use in version comparisons with < >
   $releasechar = join("${release}".match(/[a-z]/), "")
 
-  package { $::ceph::params::packages :
-    ensure => $ensure,
-    tag    => 'ceph'
-  }
+  # package { $::ceph::params::packages :
+  #   ensure => $ensure,
+  #   tag    => 'ceph'
+  # }
 
   file { '/var/log/ceph':
     ensure => directory,
     owner => 'ceph',
     group => 'ceph',
-    recurse => true,
-    require => Package[$::ceph::params::packages]
+    # require => Package[$::ceph::params::packages],
+    recurse => true
   }
 
-  if $ensure !~ /(absent|purged)/ {
-    # Make sure ceph is installed before managing the configuration
-    Package<| tag == 'ceph' |> -> Ceph_config<| |>
-    # make sure packages create their associated subdirs before creating instance dirs (ie, /var/lib/ceph/mgr/instance)
-    Package<| tag == 'ceph' |> -> File<| tag == 'ceph' |> 
-    Package<| tag == 'ceph' |> -> Service<| tag == 'ceph' |>
-    # File<| tag == 'ceph' |> -> Service<| tag == 'ceph' |>
-  }
+  # if $ensure !~ /(absent|purged)/ {
+  #   # Make sure ceph is installed before managing the configuration
+  #   Package<| tag == 'ceph' |> -> Ceph_config<| |>
+  #   # make sure packages create their associated subdirs before creating instance dirs (ie, /var/lib/ceph/mgr/instance)
+  #   Package<| tag == 'ceph' |> -> File<| tag == 'ceph' |> 
+  #   Package<| tag == 'ceph' |> -> Service<| tag == 'ceph' |>
+  #   # File<| tag == 'ceph' |> -> Service<| tag == 'ceph' |>
+  # }
 
   case $::osfamily {
     'Debian': {
@@ -143,101 +143,6 @@ class ceph (
     }
 
     'RedHat': {
-      $enabled = $ensure ? { 'present' => '1', 'absent' => '0', default => absent, }
-
-      # If you want to deploy Ceph using packages provided by CentOS SIG
-      # https://wiki.centos.org/SpecialInterestGroup/Storage/
-      if $enable_sig {
-        if $::operatingsystem != 'CentOS' {
-          warning("CentOS SIG repository is only supported on CentOS operating system, not on ${::operatingsystem}, which can lead to packaging issues.")
-        }
-        exec { 'installing_centos-release-ceph':
-          command   => '/usr/bin/yum install -y centos-release-ceph',
-          logoutput => 'on_failure',
-          tries     => 3,
-          try_sleep => 1,
-          unless    => '/usr/bin/rpm -qa | /usr/bin/grep -q centos-release-ceph',
-        }
-        # Make sure we install the repo before any Package resource
-        Exec['installing_centos-release-ceph'] -> Package<| tag == 'ceph' |>
-      } else {
-        $el = $facts['os']['release']['major']
-        
-        Yumrepo {
-          proxy          => $proxy,
-          proxy_username => $proxy_username,
-          proxy_password => $proxy_password,
-        }
-
-        if versioncmp($facts['os']['release']['major'],'8') <= 0 {
-          yumrepo { 'ext-ceph':
-            # puppet versions prior to 3.5 do not support ensure, use enabled instead
-            enabled    => $enabled,
-            descr      => "External Ceph ${release}",
-            name       => "ext-ceph-${release}",
-            baseurl    => "http://download.ceph.com/rpm-${release}/el${el}/\$basearch",
-            gpgcheck   => '1',
-            gpgkey     => 'https://download.ceph.com/keys/release.asc',
-            mirrorlist => absent,
-            priority   => '10', # prefer ceph repos over EPEL
-            tag        => 'ceph',
-          }
-
-          yumrepo { 'ext-ceph-noarch':
-            # puppet versions prior to 3.5 do not support ensure, use enabled instead
-            enabled    => $enabled,
-            descr      => 'External Ceph noarch',
-            name       => "ext-ceph-${release}-noarch",
-            baseurl    => "http://download.ceph.com/rpm-${release}/el${el}/noarch",
-            gpgcheck   => '1',
-            gpgkey     => 'https://download.ceph.com/keys/release.asc',
-            mirrorlist => absent,
-            priority   => '10', # prefer ceph repos over EPEL
-            tag        => 'ceph',
-          }
-        } elsif versioncmp($facts['os']['release']['major'],'9') >= 0 {
-          package { 'centos-release-ceph-reef': ensure => present }
-        }
-
-        if $fastcgi {
-          yumrepo { 'ext-ceph-fastcgi':
-            enabled    => $enabled,
-            descr      => 'FastCGI basearch packages for Ceph',
-            name       => 'ext-ceph-fastcgi',
-            baseurl    => "http://gitbuilder.ceph.com/mod_fastcgi-rpm-rhel${el}-x86_64-basic/ref/master",
-            gpgcheck   => '1',
-            gpgkey     => 'https://download.ceph.com/keys/autobuild.asc',
-            mirrorlist => absent,
-            priority   => '20', # prefer ceph repos over EPEL
-            tag        => 'ceph',
-          }
-        }
-
-        if versioncmp($facts['os']['release']['major'],'7') == 0 {
-          # prefer ceph.com repos over EPEL
-          package { 'yum-plugin-priorities':
-            ensure => present,
-          }
-        }
-      }
-
-      if $enable_epel {
-        yumrepo { "ext-epel-${el}":
-          # puppet versions prior to 3.5 do not support ensure, use enabled instead
-          enabled    => $enabled,
-          descr      => "External EPEL ${el}",
-          name       => "ext-epel-${el}",
-          baseurl    => absent,
-          gpgcheck   => '1',
-          gpgkey     => "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-${el}",
-          mirrorlist => "http://mirrors.fedoraproject.org/metalink?repo=epel-${el}&arch=\$basearch",
-          priority   => '20', # prefer ceph repos over EPEL
-          tag        => 'ceph',
-          exclude    => 'python-ceph-compat python-rbd python-rados python-cephfs',
-        }
-      }
-
-      Yumrepo<| tag == 'ceph' |> -> Package<| tag == 'ceph' |>
     }
 
     default: {
