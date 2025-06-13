@@ -33,7 +33,7 @@
 #
 class ceph::params (
   $exec_timeout = 600,
-  $packages = 'ceph', # just provide the minimum per default
+  $packages = 'ceph-common', # just provide the minimum per default
   $rgw_socket_path = '/tmp/radosgw.sock',
 ) {
 
