@@ -91,7 +91,10 @@ class ceph (
     owner => 'ceph',
     group => 'ceph',
     # require => Package[$::ceph::params::packages],
-    recurse => true
+    recurse => true,
+    # Don't enforce SELinux contexts: cephadm labels /var/log/ceph/<fsid> container_file_t, and
+    # resetting it to ceph_log_t on every recursive run made Puppet and cephadm relabel in a loop.
+    selinux_ignore_defaults => true,
   }
 
   # if $ensure !~ /(absent|purged)/ {
