@@ -85,7 +85,7 @@ define ceph::mds (
     }
   }
 
-  if $::operatingsystem == 'Ubuntu' {
+  if $facts['os']['name'] == 'Ubuntu' {
     $service = "ceph-mds-${instance}"
     $init = 'upstart'
     Service {
@@ -96,7 +96,7 @@ define ceph::mds (
       stop     => "stop ceph-mon id=${instance}",
       status   => "status ceph-mon id=${instance}"
     }
-  } elsif ($::osfamily in ['RedHat', 'Debian']) and ((versioncmp($::operatingsystemmajrelease, '7') >= 0) or (versioncmp($::operatingsystemmajrelease, '8') >= 0)) {
+  } elsif ($facts['os']['family'] in ['RedHat', 'Debian']) and ((versioncmp($facts['os']['release']['major'], '7') >= 0) or (versioncmp($facts['os']['release']['major'], '8') >= 0)) {
     # use native systemd provider.  Not supporting older versions.
     $service = "ceph-mds@${instance}"
 
@@ -111,7 +111,7 @@ define ceph::mds (
       }
     }
   } else {
-    fail("operatingsystem = ${::operatingsystem} is not supported")
+    fail("operatingsystem = ${facts['os']['name']} is not supported")
   }
 
   service {"${service}":

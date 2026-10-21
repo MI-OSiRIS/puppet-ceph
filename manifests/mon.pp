@@ -104,7 +104,7 @@ define ceph::mon (
       }
     }
 
-    if $::operatingsystem == 'Ubuntu' {
+    if $facts['os']['name'] == 'Ubuntu' {
       $mon_service = "ceph-mon-${id}"
       $init = 'upstart'
       Service {
@@ -115,7 +115,7 @@ define ceph::mon (
         stop     => "stop ceph-mon id=${id}",
         status   => "status ceph-mon id=${id}",
       }
-    } elsif $::osfamily in ['RedHat', 'Debian'] {
+    } elsif $facts['os']['family'] in ['RedHat', 'Debian'] {
       # used later in touch /var/lib/ceph/mon/ceph-node1/$init (and probably different for systemd?)
       $init = 'sysvinit'
       if ($::ceph::releasechar < 'i') {
@@ -132,12 +132,12 @@ define ceph::mon (
         $mon_service = "ceph-mon@${id}"
       }
     } else {
-      fail("operatingsystem = ${::operatingsystem} is not supported")
+      fail("operatingsystem = ${facts['os']['name']} is not supported")
     }
 
     if $ensure == present {
 
-      if $::osfamily == 'RedHat' {
+      if $facts['os']['family'] == 'RedHat' {
         file_line { '/etc/sysconfig/ceph':
           path => '/etc/sysconfig/ceph',
           line  => "CLUSTER=${cluster_name}",
@@ -255,7 +255,7 @@ test ! -e ${keyring_path}
 
     } else {
 
-      if $::osfamily == 'RedHat' {
+      if $facts['os']['family'] == 'RedHat' {
         file_line { '/etc/sysconfig/ceph':
           path => '/etc/sysconfig/ceph',
           line => "CLUSTER=${cluster_name}",

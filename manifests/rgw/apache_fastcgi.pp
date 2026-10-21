@@ -70,7 +70,7 @@ define ceph::rgw::apache_fastcgi (
   $admin_email          = 'root@localhost',
   $docroot              = '/var/www',
   $fcgi_file            = '/var/www/s3gw.fcgi',
-  $rgw_dns_name         = $::fqdn,
+  $rgw_dns_name         = $facts['networking']['fqdn'],
   $rgw_port             = '80',
   $rgw_socket_path      = $::ceph::params::rgw_socket_path,
   $syslog               = true,
@@ -130,7 +130,7 @@ exec /usr/bin/radosgw -c /etc/ceph/ceph.conf -n ${name}",
   # dependency on ceph apache repo if set
   $pkg_fastcgi = $::apache::params::mod_packages['fastcgi']
   if $ceph_apache_repo {
-    case $::osfamily {
+    case $facts['os']['family'] {
       'Debian': {
         Apt::Source['ceph-fastcgi']
         -> Package[$pkg_fastcgi]
@@ -140,7 +140,7 @@ exec /usr/bin/radosgw -c /etc/ceph/ceph.conf -n ${name}",
         -> Package[$pkg_fastcgi]
       }
       default: {
-        fail("Unsupported osfamily: ${::osfamily} operatingsystem: ${::operatingsystem}, module ${module_name} only supports osfamily Debian and RedHat")
+        fail("Unsupported osfamily: ${facts['os']['family']} operatingsystem: ${facts['os']['name']}, module ${module_name} only supports osfamily Debian and RedHat")
       }
     }
   }

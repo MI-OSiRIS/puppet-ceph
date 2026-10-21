@@ -54,7 +54,7 @@ define ceph::rgw::apache (
   $admin_email      = 'root@localhost',
   $docroot          = '/var/www',
   $fcgi_file        = '/var/www/s3gw.fcgi',
-  $rgw_dns_name     = $::fqdn,
+  $rgw_dns_name     = $facts['networking']['fqdn'],
   $rgw_port         = 80,
   $rgw_socket_path  = $::ceph::params::rgw_socket_path,
   $syslog           = true,
