@@ -99,7 +99,7 @@ define ceph::rgw::instance (
   $group              = $::ceph::params::group_radosgw,
   $keyring_path       = undef,
   $log_file           = undef,
-  $rgw_dns_name       = $::fqdn,
+  $rgw_dns_name       = $facts['networking']['fqdn'],
   $rgw_socket_path    = $::ceph::params::rgw_socket_path,
   $rgw_print_continue = false,
   $rgw_port           = undef,
@@ -166,7 +166,7 @@ define ceph::rgw::instance (
   }
 
   ceph_config {
-    "${cluster}/client.${client_id}/host":                        value => $::hostname, ensure => $ensure;
+    "${cluster}/client.${client_id}/host":                        value => $facts['networking']['hostname'], ensure => $ensure;
     "${cluster}/client.${client_id}/keyring":                     value => $keyring_path_r, ensure => $ensure;
     "${cluster}/client.${client_id}/log_file":                    value => $log_file_r, ensure => $ensure;
     "${cluster}/client.${client_id}/rgw_data":                    value => $rgw_data_r, ensure => $ensure;
@@ -228,7 +228,7 @@ define ceph::rgw::instance (
   # }
 
   # service definition
-  if $::operatingsystem == 'Ubuntu' {
+  if $facts['os']['name'] == 'Ubuntu' {
     $init_ready_file = 'done'
 
     Service {
@@ -239,11 +239,11 @@ define ceph::rgw::instance (
       status   => "status radosgw id=${name}",
       provider => $::ceph::params::service_provider,
     }
-  } elsif ($::operatingsystem == 'Debian') or ($::osfamily == 'RedHat') {
+  } elsif ($facts['os']['name'] == 'Debian') or ($facts['os']['family'] == 'RedHat') {
 
   # RHEL/CentOS7 systemd additions and over-rides for each instance.  No provision made for releases before Infernalis
 
-  if (($::osfamily == 'RedHat') and (versioncmp($::operatingsystemmajrelease, '7') >= 0)) {
+  if (($facts['os']['family'] == 'RedHat') and (versioncmp($facts['os']['release']['major'], '7') >= 0)) {
 
     $init_ready_file = 'systemd'
     $service_name = "ceph-radosgw@${client_id}"
@@ -278,7 +278,7 @@ define ceph::rgw::instance (
     }
   }
   else {
-    fail("operatingsystem = ${::operatingsystem} is not supported")
+    fail("operatingsystem = ${facts['os']['name']} is not supported")
   }
 
   # for systemd this doesn't seem to matter but we'll follow the convention

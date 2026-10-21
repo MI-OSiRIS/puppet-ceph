@@ -37,7 +37,7 @@ class ceph::params (
   $rgw_socket_path = '/tmp/radosgw.sock',
 ) {
 
-  case $::osfamily {
+  case $facts['os']['family'] {
     'Debian': {
       $pkg_radosgw      = 'radosgw'
       $user_radosgw     = 'ceph'
@@ -57,7 +57,7 @@ class ceph::params (
     }
 
     default: {
-      fail("Unsupported osfamily: ${::osfamily} operatingsystem: ${::operatingsystem}, module ${module_name} only supports osfamily Debian or RedHat")
+      fail("Unsupported osfamily: ${facts['os']['family']} operatingsystem: ${facts['os']['name']}, module ${module_name} only supports osfamily Debian or RedHat")
     }
   }
 }

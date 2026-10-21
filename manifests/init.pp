@@ -106,7 +106,7 @@ class ceph (
   #   # File<| tag == 'ceph' |> -> Service<| tag == 'ceph' |>
   # }
 
-  case $::osfamily {
+  case $facts['os']['family'] {
     'Debian': {
       include ::apt
 
@@ -119,7 +119,7 @@ class ceph (
       apt::source { 'ceph':
         ensure   => $ensure,
         location => "http://download.ceph.com/debian-${release}/",
-        release  => $::lsbdistcodename,
+        release  => $facts.dig('os', 'distro', 'codename'),
         require  => Apt::Key['ceph'],
         tag      => 'ceph',
       }
@@ -134,8 +134,8 @@ class ceph (
 
         apt::source { 'ceph-fastcgi':
           ensure   => $ensure,
-          location => "http://gitbuilder.ceph.com/libapache-mod-fastcgi-deb-${::lsbdistcodename}-${::hardwaremodel}-basic/ref/master",
-          release  => $::lsbdistcodename,
+          location => "http://gitbuilder.ceph.com/libapache-mod-fastcgi-deb-${facts['os']['distro']['codename']}-${facts['os']['hardware']}-basic/ref/master",
+          release  => $facts.dig('os', 'distro', 'codename'),
           require  => Apt::Key['ceph-gitbuilder'],
         }
 
@@ -149,7 +149,7 @@ class ceph (
     }
 
     default: {
-      fail("Unsupported osfamily: ${::osfamily} operatingsystem: ${::operatingsystem}, module ${module_name} only supports osfamily Debian and RedHat")
+      fail("Unsupported osfamily: ${facts['os']['family']} operatingsystem: ${facts['os']['name']}, module ${module_name} only supports osfamily Debian and RedHat")
     }
   }
 }
