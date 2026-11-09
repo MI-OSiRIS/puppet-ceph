@@ -101,19 +101,9 @@ define ceph::key (
   } else {
     $keyring_file = $keyring_path
   }
-  if $cap_mon {
-    $mon_caps = "--cap mon '${cap_mon}' "
-  }
-  if $cap_osd {
-    $osd_caps = "--cap osd '${cap_osd}' "
-  }
-  if $cap_mds {
-    $mds_caps = "--cap mds '${cap_mds}' "
-  }
-  if $cap_mgr {
-    $mgr_caps = "--cap mgr '${cap_mgr}' "
-  }
-  $caps = "${mon_caps}${osd_caps}${mds_caps}${mgr_caps}"
+  # cap_mon/cap_osd/cap_mds/cap_mgr are accepted for compatibility but not applied: this
+  # define only writes the keyring file below. (A $caps string used to be built from them
+  # and never used; it referenced unset variables and warned on every compile.)
   # this allows multiple defines for the same 'keyring file',
   # which is supported by ceph-authtool
   if ! defined(File[$keyring_file]) {
